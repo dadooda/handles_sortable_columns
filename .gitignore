@@ -1,0 +1,10 @@
+# General Ruby.
+.old*/
+*-old*
+*-old*/
+/*.patch
+.proto*
+.proto*/
+*.rbx
+.ref*
+.ref*/

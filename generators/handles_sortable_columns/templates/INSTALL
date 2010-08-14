@@ -1,0 +1,11 @@
+
+Finalizing `handles_sortable_columns` Installation
+==================================================
+
+In your `ApplicationController` add:
+
+    handles_sortable_columns
+
+
+Good luck!
+
