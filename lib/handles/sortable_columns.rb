@@ -38,9 +38,9 @@ module Handles
       #   sopts = sortable_columns_options do |field, order|
       #     case field
       #     when "is_forged", "created_at", "updated_at"
-      #       "#{field} #{order}, self.name ASC"
+      #       "#{field} #{order}, name ASC"
       #     else
-      #       "self.name ASC"
+      #       "name ASC"
       #     end
       #   end
       #
@@ -140,7 +140,7 @@ module Handles
           pcs << link_to(label, params.merge({o[:sort_param] => [("-" if not o[:asc]), o[:field]].join, o[:page_param] => 1}))
         end
 
-        DT.p "pcs", pcs
+        ##DT.p "pcs", pcs
         pcs.join
       end
     end # HelperMethods
