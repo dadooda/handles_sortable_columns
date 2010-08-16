@@ -1,35 +1,76 @@
 module Handles
   # A controller handles sortable table columns.
   module SortableColumns
-    # Configuration hash.
-    #   Handles::SortableColumns.conf                # => {...}
-    #   Handles::SortableColumns.conf[:sort_param]   # => "sort"
-    #   Handles::SortableColumns.conf[:sort_param] = "order"
-    def self.conf
-      @conf ||= {
-        :page_param         => "page",
-        :sort_param         => "sort",
-        :indicator_markup   => [%{<span class="SortOrder">}, %{</span>}],
-        :indicator_text     => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
-      }
-    end
-
     def self.included(owner)
       owner.extend MetaClassMethods
     end
+
+    class Config
+      # GET parameter for page number. Default:
+      #   page
+      attr_accessor :page_param
+
+      # GET parameter for sort field and order. Default:
+      #   sort
+      attr_accessor :sort_param
+
+      # Sort indicator wrapping. Default:
+      #   ["<span class='SortOrder'>", "</span>"]
+      attr_accessor :indicator_markup
+
+      # Sort indicator text. Default:
+      #  {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"}
+      attr_accessor :indicator_text
+
+      def initialize(attrs = {})
+        defaults = {
+          :page_param         => "page",
+          :sort_param         => "sort",
+          :indicator_markup   => ["<span class='SortOrder'>", "</span>"],   # NOTE: Maintain simpler syntax for doc purposes.
+          :indicator_text     => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
+        }
+
+        defaults.merge(attrs).each {|k, v| send("#{k}=", v)}
+      end
+
+      def [](key)
+        send(key)
+      end
+
+      def []=(key, value)
+        send("#{key}=", value)
+      end
+    end # Config
 
     module MetaClassMethods
       # Activate feature.
       #   class MyController < ApplicationController
       #     handles_sortable_columns
+      #     handles_sortable_columns do |conf|
+      #       conf.page_param = "p"
+      #     end
       #   end
-      def handles_sortable_columns
+      def handles_sortable_columns(&block)
         # Multiple activation protection.
-        return nil if self < InstanceMethods
-        include InstanceMethods
-        helper HelperMethods
+        if not self < InstanceMethods
+          extend ClassMethods
+          include InstanceMethods
+          helper HelperMethods
+        end
+
+        # Configuration is processed at every activation.
+        yield(sortable_columns_config) if block
       end
     end # MetaClassMethods
+
+    module ClassMethods
+      def sortable_columns_config
+        # NOTES:
+        # * This is controller's class variable, ensure pretty name.
+        # * Defaults are handled by the class itself.
+        @@sortable_columns_config ||= ::Handles::SortableColumns::Config.new
+      end
+    end # ClassMethods
 
     module InstanceMethods
       protected
@@ -52,7 +93,7 @@ module Handles
         o = {}
 
         #HELP sortable_columns_options
-        o[k = :sort_param] = options.delete(k) || Handles::SortableColumns.conf[k]
+        o[k = :sort_param] = options.delete(k) || self.class.sortable_columns_config[k]
         #HELP /sortable_columns_options
 
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
@@ -62,10 +103,8 @@ module Handles
         mat = params[o[:sort_param]].to_s.match /\A((?:-|))(.+?)\z/
         pp[:asc] = mat[1].empty? rescue true
         pp[:field] = mat[2] rescue nil
-        ##DT.p "pp", pp
 
         order = pp[:asc] ? "ASC" : "DESC"
-        ##DT.p "order", order
 
         order_by = if not block
           # No block -- do a straight mapping.
@@ -76,7 +115,6 @@ module Handles
           # Block is given.
           yield(pp[:field], order)
         end
-        ##DT.p "order_by", order_by
 
         if order_by
           {:order => order_by}
@@ -88,6 +126,9 @@ module Handles
     end # InstanceMethods
 
     module HelperMethods
+      # Render a sortable column link.
+      #   <%= sortable_column "Name", :field => "name" %>
+      #   <%= sortable_column "Created At", :field => "created_at", :asc => false %>
       def sortable_column(label, options = {})
         options = options.dup
         o = {}
@@ -97,36 +138,30 @@ module Handles
         o[k = :field] = options.delete(k)
 
         # The name of GET parameter generated.
-        o[k = :sort_param] = options.delete(k) || Handles::SortableColumns.conf[k]
+        o[k = :sort_param] = options.delete(k) || controller.class.sortable_columns_config[k]
 
         # The name of GET parameter for page number.
-        o[k = :page_param] = options.delete(k) || Handles::SortableColumns.conf[k]
+        o[k = :page_param] = options.delete(k) || controller.class.sortable_columns_config[k]
 
         # Sort direction by default (on first click).
         o[k = :asc] = (v = options.delete(k)).nil?? true : v
 
         # Sort indicator properties.
-        o[k = :indicator_markup] = options.delete(k) || Handles::SortableColumns.conf[k]
-        o[k = :indicator_text] = options.delete(k) || Handles::SortableColumns.conf[k]
+        o[k = :indicator_markup] = options.delete(k) || controller.class.sortable_columns_config[k]
+        o[k = :indicator_text] = options.delete(k) || controller.class.sortable_columns_config[k]
         #HELP /sortable_column
 
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
-        ##DT.p "Handles::SortableColumns.conf", Handles::SortableColumns.conf
-        ##DT.p "o", o
 
         if not o[k = :field]
           raise "options[#{k.inspect}] is required"
         end
 
-        ##DT.p "o", o
-
         # Build "parsed param". "-name" means "by name, descending".
         pp = {}
         mat = params[o[:sort_param]].to_s.match /\A((?:-|))(.+?)\z/
-        ##DT.p "mat", mat.to_a
         pp[:asc] = mat[1].empty? rescue true
         pp[:field] = mat[2] rescue nil
-        ##DT.p "pp", pp
 
         pcs = []
 
@@ -140,9 +175,8 @@ module Handles
           pcs << link_to(label, params.merge({o[:sort_param] => [("-" if not o[:asc]), o[:field]].join, o[:page_param] => 1}))
         end
 
-        ##DT.p "pcs", pcs
         pcs.join
       end
     end # HelperMethods
-  end
-end
+  end # SortableColumns
+end # Handles
