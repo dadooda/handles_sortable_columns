@@ -9,7 +9,7 @@ begin
     gem.summary = "Sortable Table Columns"
     gem.description = gem.summary
     gem.email = "alex.r@askit.org"
-    gem.homepage = "http://github.com/dadooda/handles_sortable_titles"
+    gem.homepage = "http://github.com/dadooda/handles_sortable_columns"
     gem.authors = ["Alex Fortuna"]
     gem.files = FileList[
       "[A-Z]*",
