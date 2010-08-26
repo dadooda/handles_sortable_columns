@@ -8,3 +8,6 @@
 *.rbx
 .ref*
 .ref*/
+
+# Project-specific.
+/doc/
