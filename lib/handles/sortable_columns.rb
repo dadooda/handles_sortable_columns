@@ -49,7 +49,7 @@ module Handles  #:nodoc:
       attr_accessor :sort_param
 
       # Sort indicator text. If any of values are empty, indicator is not displayed. Default:
-      #  {:asc => "[&nbsp;&darr;&nbsp;]", :desc => "[&nbsp;&uarr;&nbsp;]"}
+      #  {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"}
       attr_accessor :indicator_text
 
       # Sort indicator class. Default:
@@ -192,8 +192,9 @@ module Handles  #:nodoc:
       #
       # Examples:
       #   <%= sortable_column "Product" %>
+      #   <%= sortable_column "Highest Price", :column_name => "max_price" %>
       #   <%= sortable_column "Name", :class => "SortableLink" %>
-      #   <%= sortable_column "Created At", :column => "created_at", :direction => :asc %>
+      #   <%= sortable_column "Created At", :direction => :asc %>
       def sortable_column(title, options = {})
         options = options.dup
         o = {}
