@@ -47,7 +47,7 @@ That's it for basic usage. Production usage may require passing additional param
 Production Usage
 ----------------
 
-Please take time to read the gem's full [RDoc documentation](#TODO-link-to-doc). This README has a limited coverage.
+Please take time to read the gem's full [RDoc documentation](http://rdoc.info/projects/dadooda/handles_sortable_columns). This README has a limited coverage.
 
 
 ### Configuration ###
