@@ -85,7 +85,7 @@ Disable text-based sort indicator completely:
 
 Explicitly specify column name:
 
-    <%= sortable_column "Highest Price", :column_name => "max_price" %>
+    <%= sortable_column "Highest Price", :column => "max_price" %>
 
 Specify CSS class for this particular link:
 

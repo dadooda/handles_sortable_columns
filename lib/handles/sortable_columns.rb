@@ -1,20 +1,23 @@
 module Handles  #:nodoc:
   # == Overview
   #
-  # A controller handles sortable table columns.
+  # A sortable columns feature for your controller and views.
   #
   # == Basic Usage
   #
   # Activate the feature in your controller class:
+  #
   #   class MyController < ApplicationController
   #     handles_sortable_columns
   #   ...
   # 
   # In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper:
+  #
   #   <%= sortable_column "Product" %>
   #   <%= sortable_column "Price" % >
   #
   # In controller action, fetch and use the order clause according to current state of sortable columns:
+  #
   #   def index
   #     order = sortable_column_order
   #     @records = Article.all(:order => order)
@@ -31,28 +34,34 @@ module Handles  #:nodoc:
       owner.extend MetaClassMethods
     end
 
-    # Feature's configuration object. Passed to block when you do a:
+    # Sortable columns configuration object. Passed to block when you do a:
+    #
     #   handles_sortable_column do |conf|
     #     ...
     #   end
     class Config
       # CSS class for link (regardless of sorted state). Default:
+      #
       #   nil
       attr_accessor :class
 
       # GET parameter name for page number. Default:
+      #
       #   page
       attr_accessor :page_param
 
       # GET parameter name for sort column and direction. Default:
+      #
       #   sort
       attr_accessor :sort_param
 
       # Sort indicator text. If any of values are empty, indicator is not displayed. Default:
+      #
       #  {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"}
       attr_accessor :indicator_text
 
       # Sort indicator class. Default:
+      #
       #  {:asc => "SortedAsc", :desc => "SortedDesc"}
       attr_accessor :indicator_class
 
@@ -77,12 +86,14 @@ module Handles  #:nodoc:
     end # Config
 
     module MetaClassMethods
-      # Activate and optionally configure the feature.
+      # Activate and optionally configure the sortable columns.
+      #
       #   class MyController < ApplicationController
       #     handles_sortable_columns
       #   end
       #
       # With configuration:
+      #
       #   class MyController < ApplicationController
       #     handles_sortable_columns do |conf|
       #       conf.sort_param = "s"
@@ -107,19 +118,21 @@ module Handles  #:nodoc:
     end # MetaClassMethods
 
     module ClassMethods
-      # Internal/advanced use only. Access/initialize feature's config.
+      # Internal/advanced use only. Access/initialize the sortable columns config.
       def sortable_columns_config
         # NOTE: This is controller's class instance variable.
         @sortable_columns_config ||= ::Handles::SortableColumns::Config.new
       end
 
       # Internal/advanced use only. Convert title to sortable column name.
+      #
       #   sortable_column_name_from_title("ProductName")  # => "product_name"
       def sortable_column_name_from_title(title)
         title.gsub(/(\s)(\S)/) {$2.upcase}.underscore
       end
 
       # Internal/advanced use only. Parse sortable column sort param into a Hash with predefined keys.
+      #
       #   parse_sortable_column_sort_param("name")    # => {:column => "name", :direction => :asc}
       #   parse_sortable_column_sort_param("-name")   # => {:column => "name", :direction => :desc}
       #   parse_sortable_column_sort_param("")        # => {:column => nil, :direction => nil}
@@ -139,12 +152,14 @@ module Handles  #:nodoc:
       # Compile SQL order clause according to current state of sortable columns.
       #
       # Basic (kickstart) usage:
+      #
       #   order = sortable_column_order
       #
       # <b>WARNING!</b> Basic usage is <b>not recommended</b> for production since it is potentially
       # vulnerable to SQL injection!
       #
       # Production usage with multiple sort criteria, column name validation and defaults:
+      #
       #   order = sortable_column_order do |column, direction|
       #     case column
       #     when "name"
@@ -156,11 +171,10 @@ module Handles  #:nodoc:
       #     end
       #   end
       #
-      # Apply order in Rails 2.x:
-      #   @records = Article.all({:order => order})
+      # Apply order:
       #
-      # Apply order in Rails 3:
-      #   @records = Article.order(order)
+      #   @records = Article.all(:order => order)   # Rails 2.x.
+      #   @records = Article.order(order)           # Rails 3.
       def sortable_column_order(&block)
         conf = {}
         conf[k = :sort_param] = self.class.sortable_columns_config[k]
@@ -191,6 +205,7 @@ module Handles  #:nodoc:
       # * <tt>:class</tt> -- CSS class for link (regardless of sorted state).
       #
       # Examples:
+      #
       #   <%= sortable_column "Product" %>
       #   <%= sortable_column "Highest Price", :column_name => "max_price" %>
       #   <%= sortable_column "Name", :class => "SortableLink" %>
