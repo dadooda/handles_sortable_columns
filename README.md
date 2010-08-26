@@ -23,8 +23,6 @@ In your app's `config/environment.rb` do a:
 Basic Usage
 -----------
 
-<!-- This chapter should be in 100% similar to the RDoc comment under the same title. -->
-
 Activate the feature in your controller class:
 
     class MyController < ApplicationController
