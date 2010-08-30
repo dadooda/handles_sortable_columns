@@ -203,6 +203,7 @@ module Handles  #:nodoc:
       # * <tt>:column</tt> -- Column name. E.g. <tt>"created_at"</tt>.
       # * <tt>:direction</tt> -- Sort direction on first click. <tt>:asc</tt> or <tt>:desc</tt>. Default is <tt>:asc</tt>.
       # * <tt>:class</tt> -- CSS class for link (regardless of sorted state).
+      # * <tt>:style</tt> -- CSS style for link (regardless of sorted state).
       #
       # Examples:
       #
@@ -223,6 +224,7 @@ module Handles  #:nodoc:
         o[k = :column] = options.delete(k) || controller.class.sortable_column_name_from_title(title)
         o[k = :direction] = options.delete(k).to_s.downcase =~ /\Adesc\z/ ? :desc : :asc
         o[k = :class] = options.delete(k) || controller.class.sortable_columns_config[k]
+        o[k = :style] = options.delete(k)
         #HELP /sortable_column
 
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
@@ -238,20 +240,24 @@ module Handles  #:nodoc:
         # Build link itself.
         pcs = []
 
+        html_options = {}
+        html_options[:class] = css_class if css_class.present?
+        html_options[:style] = o[:style] if o[:style].present?
+
         # Already sorted?
         if pp[:column] == o[:column].to_s
           if (s = conf[:indicator_class][pp[:direction]]).present?
             css_class << s
           end
 
-          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), {:class => css_class.present?? css_class.join(" ") : nil})       # Opposite sort order when clicked.
+          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), html_options)       # Opposite sort order when clicked.
 
           if (s = conf[:indicator_text][pp[:direction]]).present?
             pcs << s
           end
         else
           # Not sorted.
-          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), {:class => css_class.present?? css_class.join(" ") : nil})
+          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), html_options)
         end
 
         pcs.join
