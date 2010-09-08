@@ -246,7 +246,7 @@ module Handles  #:nodoc:
         pcs = []
 
         html_options = {}
-        html_options[:class] = css_class if css_class.present?
+        html_options[:class] = css_class.join(" ") if css_class.present?
         html_options[:style] = o[:style] if o[:style].present?
 
         # Already sorted?
