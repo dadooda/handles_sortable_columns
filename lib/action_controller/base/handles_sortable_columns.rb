@@ -1,3 +1,3 @@
 class ActionController::Base    #:nodoc:
-  include Handles::SortableColumns
+  include ::Handles::SortableColumns
 end

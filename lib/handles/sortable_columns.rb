@@ -237,6 +237,11 @@ module Handles  #:nodoc:
           css_class << s
         end
 
+        # If already sorted and indicator class defined, append it.
+        if pp[:column] == o[:column].to_s and (s = conf[:indicator_class][pp[:direction]]).present?
+          css_class << s
+        end
+
         # Build link itself.
         pcs = []
 
@@ -246,12 +251,9 @@ module Handles  #:nodoc:
 
         # Already sorted?
         if pp[:column] == o[:column].to_s
-          if (s = conf[:indicator_class][pp[:direction]]).present?
-            css_class << s
-          end
-
           pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), html_options)       # Opposite sort order when clicked.
 
+          # Append indicator, if configured.
           if (s = conf[:indicator_text][pp[:direction]]).present?
             pcs << s
           end
@@ -260,7 +262,8 @@ module Handles  #:nodoc:
           pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), html_options)
         end
 
-        pcs.join
+        # For Rails 3 provide #html_safe.
+        (v = pcs.join).respond_to?(:html_safe) ? v.html_safe : v
       end
     end # HelperMethods
   end # SortableColumns
