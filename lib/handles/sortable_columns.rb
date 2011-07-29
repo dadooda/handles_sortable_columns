@@ -9,7 +9,7 @@ module Handles  #:nodoc:
   #
   #   class MyController < ApplicationController
   #     handles_sortable_columns
-  #   ...
+  #     ...
   # 
   # In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper:
   #
@@ -20,30 +20,30 @@ module Handles  #:nodoc:
   #
   #   def index
   #     order = sortable_column_order
-  #     @records = Article.all(:order => order)
+  #     @records = Article.order(order)           # Rails 3.
+  #     @records = Article.all(:order => order)   # Rails 2.
   #   end
   #
   # That's it for basic usage. Production usage may require passing additional parameters to listed methods.
   #
   # See also:
-  # * <tt>MetaClassMethods#handles_sortable_columns</tt>
-  # * <tt>HelperMethods#sortable_column</tt>
-  # * <tt>InstanceMethods#sortable_column_order</tt>
+  # * MetaClassMethods#handles_sortable_columns
+  # * InstanceMethods#sortable_column_order
   module SortableColumns
-    def self.included(owner)
+    def self.included(owner)    #:nodoc:
       owner.extend MetaClassMethods
     end
 
-    # Sortable columns configuration object. Passed to block when you do a:
+    # Sortable columns configuration object. Passed to the block when you do a:
     #
-    #   handles_sortable_column do |conf|
+    #   handles_sortable_columns do |conf|
     #     ...
     #   end
     class Config
       # CSS class for link (regardless of sorted state). Default:
       #
-      #   nil
-      attr_accessor :class
+      #   SortableColumnLink
+      attr_accessor :link_class
 
       # GET parameter name for page number. Default:
       #
@@ -67,30 +67,33 @@ module Handles  #:nodoc:
 
       def initialize(attrs = {})
         defaults = {
-          :page_param         => "page",
-          :sort_param         => "sort",
-          :indicator_text     => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
-          :indicator_class    => {:asc => "SortedAsc", :desc => "SortedDesc"},
+          :link_class => "SortableColumnLink",
+          :indicator_class => {:asc => "SortedAsc", :desc => "SortedDesc"},
+          :indicator_text => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
+          :page_param => "page",
+          :sort_param => "sort",
         }
 
         defaults.merge(attrs).each {|k, v| send("#{k}=", v)}
       end
 
+      # Bracket access for convenience.
       def [](key)
         send(key)
       end
 
+      # Bracket access for convenience.
       def []=(key, value)
         send("#{key}=", value)
       end
     end # Config
 
     module MetaClassMethods
-      # Activate and optionally configure the sortable columns.
+      # Activate and optionally configure the sortable columns feature in your controller.
       #
       #   class MyController < ApplicationController
       #     handles_sortable_columns
-      #   end
+      #     ...
       #
       # With configuration:
       #
@@ -101,42 +104,43 @@ module Handles  #:nodoc:
       #       conf.indicator_text = {}
       #       ...
       #     end
-      #   end
+      #     ...
       #
-      # <tt>conf</tt> is a <tt>Config</tt> object.
-      def handles_sortable_columns(&block)
+      # With filter options:
+      #
+      #   class MyController < ApplicationController
+      #     handles_sortable_columns(:only => [:index]) do |conf|
+      #       ...
+      #     end
+      #     ...
+      #
+      # NOTE: <tt>conf</tt> is a Config object.
+      def handles_sortable_columns(fopts = {}, &block)
         # Multiple activation protection.
         if not self < InstanceMethods
-          extend ClassMethods
           include InstanceMethods
-          helper HelperMethods
+          helper_method :sortable_column
         end
 
-        # Configuration is processed at every activation.
-        yield(sortable_columns_config) if block
+        # Process configuration at every activation.
+        before_filter(fopts) do |ac|
+          ac.instance_eval do
+            # NOTE: Can't `yield`, we're in a block already.
+            block.call(sortable_columns_config) if block
+          end
+        end
       end
     end # MetaClassMethods
 
-    module ClassMethods
-      # Internal/advanced use only. Access/initialize the sortable columns config.
-      def sortable_columns_config
-        # NOTE: This is controller's class instance variable.
-        @sortable_columns_config ||= ::Handles::SortableColumns::Config.new
-      end
-
-      # Internal/advanced use only. Convert title to sortable column name.
-      #
-      #   sortable_column_name_from_title("ProductName")  # => "product_name"
-      def sortable_column_name_from_title(title)
-        title.gsub(/(\s)(\S)/) {$2.upcase}.underscore
-      end
+    module InstanceMethods
+      private
 
       # Internal/advanced use only. Parse sortable column sort param into a Hash with predefined keys.
       #
       #   parse_sortable_column_sort_param("name")    # => {:column => "name", :direction => :asc}
       #   parse_sortable_column_sort_param("-name")   # => {:column => "name", :direction => :desc}
       #   parse_sortable_column_sort_param("")        # => {:column => nil, :direction => nil}
-      def parse_sortable_column_sort_param(sort)
+      def parse_sortable_column_sort_param(sort)    #:nodoc:
         out = {:column => nil, :direction => nil}
         if sort.to_s.strip.match /\A((?:-|))([^-]+)\z/
           out[:direction] = $1.empty?? :asc : :desc
@@ -144,10 +148,79 @@ module Handles  #:nodoc:
         end
         out
       end
-    end # ClassMethods
 
-    module InstanceMethods
-      protected
+      # Render a sortable column link.
+      #
+      # Options:
+      #
+      # * <tt>:column</tt> -- Column name. E.g. <tt>created_at</tt>.
+      # * <tt>:direction</tt> -- Sort direction on first click. <tt>:asc</tt> or <tt>:desc</tt>. Default is <tt>:asc</tt>.
+      # * <tt>:link_class</tt> -- CSS class for link, regardless of sorted state.
+      # * <tt>:link_style</tt> -- CSS style for link, regardless of sorted state.
+      #
+      # Examples:
+      #
+      #   <%= sortable_column "Product" %>
+      #   <%= sortable_column "Highest Price", :column => "max_price" %>
+      #   <%= sortable_column "Name", :link_class => "SortableLink" %>
+      #   <%= sortable_column "Created At", :direction => :asc %>
+      def sortable_column(title, options = {})    #:doc:
+        options = options.dup
+        o = {}
+        conf = {}
+        conf[k = :sort_param] = sortable_columns_config[k]
+        conf[k = :page_param] = sortable_columns_config[k]
+        conf[k = :indicator_text] = sortable_columns_config[k]
+        conf[k = :indicator_class] = sortable_columns_config[k]
+
+        #HELP sortable_column
+        o[k = :column] = options.delete(k) || sortable_column_title_to_name(title)
+        o[k = :direction] = options.delete(k).to_s.downcase =~ /\Adesc\z/ ? :desc : :asc
+        o[k = :link_class] = options.delete(k) || sortable_columns_config[k]
+        o[k = :link_style] = options.delete(k)
+        #HELP /sortable_column
+
+        raise "Unknown option(s): #{options.inspect}" if not options.empty?
+
+        # Parse sort param.
+        pp = parse_sortable_column_sort_param(params[conf[:sort_param]])
+
+        css_class = []
+        if (s = o[:link_class]).present?
+          css_class << s
+        end
+
+        # If already sorted and indicator class defined, append it.
+        if pp[:column] == o[:column].to_s and (s = conf[:indicator_class][pp[:direction]]).present?
+          css_class << s
+        end
+
+        # Build link itself.
+        pcs = []
+
+        html_options = {}
+        html_options[:class] = css_class.join(" ") if css_class.present?
+        html_options[:style] = o[:link_style] if o[:link_style].present?
+
+        # Rails 3 / Rails 2 fork.
+        tpl = respond_to?(:view_context) ? view_context : @template
+
+        # Already sorted?
+        if pp[:column] == o[:column].to_s
+          pcs << tpl.link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), html_options)       # Opposite sort order when clicked.
+
+          # Append indicator, if configured.
+          if (s = conf[:indicator_text][pp[:direction]]).present?
+            pcs << s
+          end
+        else
+          # Not sorted.
+          pcs << tpl.link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), html_options)
+        end
+
+        # For Rails 3 provide #html_safe.
+        (v = pcs.join).respond_to?(:html_safe) ? v.html_safe : v
+      end
 
       # Compile SQL order clause according to current state of sortable columns.
       #
@@ -155,7 +228,7 @@ module Handles  #:nodoc:
       #
       #   order = sortable_column_order
       #
-      # <b>WARNING!</b> Basic usage is <b>not recommended</b> for production since it is potentially
+      # <b>WARNING:</b> Basic usage is <b>not recommended</b> for production since it is potentially
       # vulnerable to SQL injection!
       #
       # Production usage with multiple sort criteria, column name validation and defaults:
@@ -173,17 +246,18 @@ module Handles  #:nodoc:
       #
       # Apply order:
       #
-      #   @records = Article.all(:order => order)   # Rails 2.x.
       #   @records = Article.order(order)           # Rails 3.
+      #   @records = Article.all(:order => order)   # Rails 2.
       def sortable_column_order(&block)
         conf = {}
-        conf[k = :sort_param] = self.class.sortable_columns_config[k]
+        conf[k = :sort_param] = sortable_columns_config[k]
 
         # Parse sort param.
-        pp = self.class.parse_sortable_column_sort_param(params[conf[:sort_param]])
+        pp = parse_sortable_column_sort_param(params[conf[:sort_param]])
 
         order = if block
-          yield(pp[:column], pp[:direction])
+          column, direction = pp[:column], pp[:direction]
+          yield(column, direction)    # NOTE: Makes RDoc/ri look a little smarter.
         else
           # No block -- do a straight mapping.
           if pp[:column]
@@ -194,77 +268,18 @@ module Handles  #:nodoc:
         # Can be nil.
         order
       end
-    end # InstanceMethods
 
-    module HelperMethods
-      # Render a sortable column link.
+      # Internal use only. Convert title to sortable column name.
       #
-      # Options:
-      # * <tt>:column</tt> -- Column name. E.g. <tt>"created_at"</tt>.
-      # * <tt>:direction</tt> -- Sort direction on first click. <tt>:asc</tt> or <tt>:desc</tt>. Default is <tt>:asc</tt>.
-      # * <tt>:class</tt> -- CSS class for link (regardless of sorted state).
-      # * <tt>:style</tt> -- CSS style for link (regardless of sorted state).
-      #
-      # Examples:
-      #
-      #   <%= sortable_column "Product" %>
-      #   <%= sortable_column "Highest Price", :column_name => "max_price" %>
-      #   <%= sortable_column "Name", :class => "SortableLink" %>
-      #   <%= sortable_column "Created At", :direction => :asc %>
-      def sortable_column(title, options = {})
-        options = options.dup
-        o = {}
-        conf = {}
-        conf[k = :sort_param] = controller.class.sortable_columns_config[k]
-        conf[k = :page_param] = controller.class.sortable_columns_config[k]
-        conf[k = :indicator_text] = controller.class.sortable_columns_config[k]
-        conf[k = :indicator_class] = controller.class.sortable_columns_config[k]
-
-        #HELP sortable_column
-        o[k = :column] = options.delete(k) || controller.class.sortable_column_name_from_title(title)
-        o[k = :direction] = options.delete(k).to_s.downcase =~ /\Adesc\z/ ? :desc : :asc
-        o[k = :class] = options.delete(k) || controller.class.sortable_columns_config[k]
-        o[k = :style] = options.delete(k)
-        #HELP /sortable_column
-
-        raise "Unknown option(s): #{options.inspect}" if not options.empty?
-
-        # Parse sort param.
-        pp = controller.class.parse_sortable_column_sort_param(params[conf[:sort_param]])
-
-        css_class = []
-        if (s = o[:class]).present?
-          css_class << s
-        end
-
-        # If already sorted and indicator class defined, append it.
-        if pp[:column] == o[:column].to_s and (s = conf[:indicator_class][pp[:direction]]).present?
-          css_class << s
-        end
-
-        # Build link itself.
-        pcs = []
-
-        html_options = {}
-        html_options[:class] = css_class.join(" ") if css_class.present?
-        html_options[:style] = o[:style] if o[:style].present?
-
-        # Already sorted?
-        if pp[:column] == o[:column].to_s
-          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), html_options)       # Opposite sort order when clicked.
-
-          # Append indicator, if configured.
-          if (s = conf[:indicator_text][pp[:direction]]).present?
-            pcs << s
-          end
-        else
-          # Not sorted.
-          pcs << link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), html_options)
-        end
-
-        # For Rails 3 provide #html_safe.
-        (v = pcs.join).respond_to?(:html_safe) ? v.html_safe : v
+      #   sortable_column_title_to_name("ProductName")  # => "product_name"
+      def sortable_column_title_to_name(title)    #:nodoc:
+        title.gsub(/(\s)(\S)/) {$2.upcase}.underscore
       end
-    end # HelperMethods
+
+      # Internal use only. Access/initialize feature's config.
+      def sortable_columns_config   #:nodoc:
+        @sortable_columns_config ||= ::Handles::SortableColumns::Config.new
+      end
+    end # InstanceMethods
   end # SortableColumns
 end # Handles

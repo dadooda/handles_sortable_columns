@@ -1,16 +1,9 @@
-# General Ruby.
-.old*/
+# General Ruby, sorted by first letter.
+.old*
 *-old*
-*-old*/
-/*.patch
-.proto*
-.proto*/
-*.rbx
 .ref*
-.ref*/
 
 # Project-specific.
-/dev/
 /doc/
 /pkg/
-/README.html
+/.rvmrc

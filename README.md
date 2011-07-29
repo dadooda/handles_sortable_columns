@@ -9,15 +9,33 @@ Introduction
 A simple yet flexible Rails gem/plugin to quickly add sortable table columns to your controller and views.
 
 
-Setup
------
+Setup (Rails 3)
+---------------
+
+In your app's `Gemfile`, add:
+
+    gem "handles_sortable_columns"
+
+To install the gem with RDoc/ri documentation, do a:
+
+    $ gem install handles_sortable_columns
+
+Otherwise, do a `bundle install`.
+
+
+Setup (Rails 2)
+---------------
+
+In your app's `config/environment.rb` add:
+
+    config.gem "handles_sortable_columns"
+
+To install the gem, do a:
 
     $ gem sources --add http://rubygems.org
     $ gem install handles_sortable_columns
 
-In your app's `config/environment.rb` do a:
-
-    config.gem "handles_sortable_columns"
+, or use `rake gems:install`.
 
 
 Basic Usage
@@ -27,7 +45,7 @@ Activate the feature in your controller class:
 
     class MyController < ApplicationController
       handles_sortable_columns
-    ...
+      ...
 
 In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper:
 
@@ -38,7 +56,8 @@ In controller action, fetch and use the order clause according to current state 
 
     def index
       order = sortable_column_order
-      @records = Article.all(:order => order)
+      @records = Article.order(order)           # Rails 3.
+      @records = Article.all(:order => order)   # Rails 2.
     end
 
 That's it for basic usage. Production usage may require passing additional parameters to listed methods.
@@ -59,7 +78,7 @@ Change names of GET parameters used for sorting and pagination:
         conf.sort_param = "s"
         conf.page_param = "p"
       end
-    ...
+      ...
 
 Change CSS class of all sortable column `<a>` tags:
 
