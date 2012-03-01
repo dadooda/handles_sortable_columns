@@ -171,7 +171,6 @@ module Handles  #:nodoc:
       #   <%= sortable_column "Name", :link_class => "SortableLink" %>
       #   <%= sortable_column "Created At", :direction => :asc %>
       def sortable_column(title, options = {})    #:doc:
-         puts 'aaa'
         options = options.dup
         o = {}
         conf = {}
