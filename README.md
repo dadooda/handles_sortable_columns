@@ -1,4 +1,3 @@
-
 Sortable Table Columns
 ======================
 
@@ -53,9 +52,17 @@ In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper
     <%= sortable_column "Price" %>
 
 In controller action, fetch and use the order clause according to current state of sortable columns:
-
+    
+    @@sortable_columns = %w(product price)
+    @@default_order = 'name'
     def index
-      order = sortable_column_order
+      
+      if @@sortable_columns.include? sortable_column_order
+        order = sortable_column_order
+      else
+        order = @@default_order
+      end
+      
       @records = Article.order(order)           # Rails 3.
       @records = Article.all(:order => order)   # Rails 2.
     end
