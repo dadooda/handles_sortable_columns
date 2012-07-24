@@ -40,6 +40,12 @@ module Handles  #:nodoc:
     #     ...
     #   end
     class Config
+
+      # List of accessible columns to avoid SQL/code injection. Default:
+      #
+      #   []
+      attr_accessor :columns
+      
       # CSS class for link (regardless of sorted state). Default:
       #
       #   SortableColumnLink
@@ -54,11 +60,6 @@ module Handles  #:nodoc:
       #
       #   sort
       attr_accessor :sort_param
-
-      # Default sort direction, if params[sort_param] is not given.
-      #
-      #   default_sort_value
-      attr_accessor :default_sort_value
 
       # Sort indicator text. If any of values are empty, indicator is not displayed. Default:
       #
@@ -77,7 +78,6 @@ module Handles  #:nodoc:
           :indicator_text => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
           :page_param => "page",
           :sort_param => "sort",
-          :default_sort_value => nil
         }
 
         defaults.merge(attrs).each {|k, v| send("#{k}=", v)}
@@ -147,11 +147,13 @@ module Handles  #:nodoc:
       #   parse_sortable_column_sort_param("-name")   # => {:column => "name", :direction => :desc}
       #   parse_sortable_column_sort_param("")        # => {:column => nil, :direction => nil}
       def parse_sortable_column_sort_param(sort)    #:nodoc:
+
         out = {:column => nil, :direction => nil}
         if sort.to_s.strip.match /\A((?:-|))([^-]+)\z/
           out[:direction] = $1.empty?? :asc : :desc
           out[:column] = $2.strip
         end
+        return {} if !sortable_columns_config['columns'].include?(out[:column])
         out
       end
 
@@ -175,7 +177,6 @@ module Handles  #:nodoc:
         o = {}
         conf = {}
         conf[k = :sort_param] = sortable_columns_config[k]
-        conf[k = :default_sort_value] = sortable_columns_config[k]
         conf[k = :page_param] = sortable_columns_config[k]
         conf[k = :indicator_text] = sortable_columns_config[k]
         conf[k = :indicator_class] = sortable_columns_config[k]
@@ -190,8 +191,7 @@ module Handles  #:nodoc:
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
 
         # Parse sort param.
-        sort = params[conf[:sort_param]] || conf[:default_sort_value]
-        pp = parse_sortable_column_sort_param(sort)
+        pp = parse_sortable_column_sort_param(params[conf[:sort_param]])
 
         css_class = []
         if (s = o[:link_class]).present?
@@ -259,11 +259,9 @@ module Handles  #:nodoc:
       def sortable_column_order(&block)
         conf = {}
         conf[k = :sort_param] = sortable_columns_config[k]
-        conf[k = :default_sort_value] = sortable_columns_config[k]
 
         # Parse sort param.
-        sort = params[conf[:sort_param]] || conf[:default_sort_value]
-        pp = parse_sortable_column_sort_param(sort)
+        pp = parse_sortable_column_sort_param(params[conf[:sort_param]])
 
         order = if block
           column, direction = pp[:column], pp[:direction]

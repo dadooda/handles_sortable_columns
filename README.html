@@ -43,7 +43,9 @@ $ gem install handles_sortable_columns
 <p>Activate the feature in your controller class:</p>
 
 <pre><code>class MyController &lt; ApplicationController
-  handles_sortable_columns
+  handles_sortable_columns do |conf|
+    conf.columns = ['name', 'date']
+  end
   ...
 </code></pre>
 
@@ -74,6 +76,7 @@ end
 
 <pre><code>class MyController &lt; ApplicationController
   handles_sortable_columns do |conf|
+    conf.columns = ['name', 'date']
     conf.sort_param = "s"
     conf.page_param = "p"
   end
@@ -83,6 +86,7 @@ end
 <p>Change CSS class of all sortable column <code>&lt;a&gt;</code> tags:</p>
 
 <pre><code>handles_sortable_columns do |conf|
+  conf.columns = ['name', 'date']
   conf.class = "SortableLink"
   conf.indicator_class = {:asc =&gt; "AscSortableLink", :desc =&gt; "DescSortableLink"}
 end
@@ -91,6 +95,7 @@ end
 <p>Change how text-based sort indicator looks like:</p>
 
 <pre><code>handles_sortable_columns do |conf|
+  conf.columns = ['name', 'date']
   conf.indicator_text = {:asc =&gt; "[asc]", :desc =&gt; "[desc]"}
 end
 </code></pre>
@@ -98,6 +103,7 @@ end
 <p>Disable text-based sort indicator completely:</p>
 
 <pre><code>handles_sortable_columns do |conf|
+  conf.columns = ['name', 'date']
   conf.indicator_text = {}
 end
 </code></pre>
