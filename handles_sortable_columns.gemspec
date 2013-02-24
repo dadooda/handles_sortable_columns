@@ -4,14 +4,14 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{handles_sortable_columns}
-  s.version = "0.1.3"
+  s.name = "handles_sortable_columns"
+  s.version = "0.1.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Alex Fortuna"]
-  s.date = %q{2011-07-29}
-  s.description = %q{Sortable Table Columns}
-  s.email = %q{alex.r@askit.org}
+  s.date = "2013-02-24"
+  s.description = "Sortable Table Columns"
+  s.email = "alex.r@askit.org"
   s.extra_rdoc_files = [
     "README.html",
     "README.md"
@@ -28,10 +28,10 @@ Gem::Specification.new do |s|
     "lib/handles/sortable_columns.rb",
     "lib/handles_sortable_columns.rb"
   ]
-  s.homepage = %q{http://github.com/dadooda/handles_sortable_columns}
+  s.homepage = "http://github.com/dadooda/handles_sortable_columns"
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.6.2}
-  s.summary = %q{Sortable Table Columns}
+  s.rubygems_version = "1.8.10"
+  s.summary = "Sortable Table Columns"
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
