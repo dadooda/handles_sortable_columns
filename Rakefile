@@ -1,4 +1,4 @@
-require "rake/rdoctask"
+require "rdoc/task"
 require "yaml"
 
 GEM_NAME = "handles_sortable_columns"
