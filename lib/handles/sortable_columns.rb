@@ -10,7 +10,7 @@ module Handles  #:nodoc:
   #   class MyController < ApplicationController
   #     handles_sortable_columns
   #     ...
-  # 
+  #
   # In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper:
   #
   #   <%= sortable_column "Product" %>
@@ -185,6 +185,8 @@ module Handles  #:nodoc:
         o[k = :direction] = options.delete(k).to_s.downcase =~ /\Adesc\z/ ? :desc : :asc
         o[k = :link_class] = options.delete(k) || sortable_columns_config[k]
         o[k = :link_style] = options.delete(k)
+        o[k = :link_style] = options.delete(k)
+        o[k = :route_proxy] = options.delete(k)
         #HELP /sortable_column
 
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
@@ -215,7 +217,12 @@ module Handles  #:nodoc:
 
         # Already sorted?
         if pp[:column] == o[:column].to_s
-          pcs << tpl.link_to(title, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}), html_options)       # Opposite sort order when clicked.
+          if o[:route_proxy]
+            url = o[:route_proxy].send(:url_for, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
+          else
+            url = url_for(params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
+          end
+          pcs << tpl.link_to(title, url, html_options)       # Opposite sort order when clicked.
 
           # Append indicator, if configured.
           if (s = conf[:indicator_text][pp[:direction]]).present?
@@ -223,7 +230,12 @@ module Handles  #:nodoc:
           end
         else
           # Not sorted.
-          pcs << tpl.link_to(title, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}), html_options)
+          if o[:route_proxy]
+            url = o[:route_proxy].send(:url_for, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
+          else
+            url = url_for(params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
+          end
+          pcs << tpl.link_to(title, url, html_options)
         end
 
         # For Rails 3 provide #html_safe.
