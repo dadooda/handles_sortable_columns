@@ -44,7 +44,9 @@ Basic Usage
 Activate the feature in your controller class:
 
     class MyController < ApplicationController
-      handles_sortable_columns
+      handles_sortable_columns do |conf|
+         conf.columns = ['name', 'date']
+      end
       ...
 
 In a view, mark up sortable columns by using the <tt>sortable_column</tt> helper:
@@ -75,6 +77,7 @@ Change names of GET parameters used for sorting and pagination:
 
     class MyController < ApplicationController
       handles_sortable_columns do |conf|
+        conf.columns = ['name', 'date']
         conf.sort_param = "s"
         conf.page_param = "p"
       end
@@ -83,6 +86,7 @@ Change names of GET parameters used for sorting and pagination:
 Change CSS class of all sortable column `<a>` tags:
 
     handles_sortable_columns do |conf|
+      conf.columns = ['name', 'date']
       conf.class = "SortableLink"
       conf.indicator_class = {:asc => "AscSortableLink", :desc => "DescSortableLink"}
     end
@@ -90,12 +94,14 @@ Change CSS class of all sortable column `<a>` tags:
 Change how text-based sort indicator looks like:
 
     handles_sortable_columns do |conf|
+      conf.columns = ['name', 'date']
       conf.indicator_text = {:asc => "[asc]", :desc => "[desc]"}
     end
 
 Disable text-based sort indicator completely:
 
     handles_sortable_columns do |conf|
+      conf.columns = ['name', 'date']
       conf.indicator_text = {}
     end
 
