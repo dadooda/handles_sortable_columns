@@ -70,6 +70,11 @@ module Handles  #:nodoc:
       #  {:asc => "SortedAsc", :desc => "SortedDesc"}
       attr_accessor :indicator_class
 
+      # Link Renderer class. Default:
+      #
+      #  SortableColumns::DefaultLinkRenderer
+      attr_accessor :link_renderer
+
       def initialize(attrs = {})
         defaults = {
           :link_class => "SortableColumnLink",
@@ -77,7 +82,8 @@ module Handles  #:nodoc:
           :indicator_text => {:asc => "&nbsp;&darr;&nbsp;", :desc => "&nbsp;&uarr;&nbsp;"},
           :page_param => "page",
           :sort_param => "sort",
-          :default_sort_value => nil
+          :default_sort_value => nil,
+          :link_renderer => SortableColumns::DefaultLinkRenderer
         }
 
         defaults.merge(attrs).each {|k, v| send("#{k}=", v)}
@@ -179,6 +185,7 @@ module Handles  #:nodoc:
         conf[k = :page_param] = sortable_columns_config[k]
         conf[k = :indicator_text] = sortable_columns_config[k]
         conf[k = :indicator_class] = sortable_columns_config[k]
+        conf[k = :link_renderer] = sortable_columns_config[k]
 
         #HELP sortable_column
         o[k = :column] = options.delete(k) || sortable_column_title_to_name(title)
@@ -212,9 +219,6 @@ module Handles  #:nodoc:
         html_options[:class] = css_class.join(" ") if css_class.present?
         html_options[:style] = o[:link_style] if o[:link_style].present?
 
-        # Rails 3 / Rails 2 fork.
-        tpl = respond_to?(:view_context) ? view_context : @template
-
         # Already sorted?
         if pp[:column] == o[:column].to_s
           if o[:route_proxy]
@@ -222,12 +226,8 @@ module Handles  #:nodoc:
           else
             url = url_for(params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
           end
-          pcs << tpl.link_to(title, url, html_options)       # Opposite sort order when clicked.
 
-          # Append indicator, if configured.
-          if (s = conf[:indicator_text][pp[:direction]]).present?
-            pcs << s
-          end
+          indicator_text = conf[:indicator_text][pp[:direction]]
         else
           # Not sorted.
           if o[:route_proxy]
@@ -235,8 +235,16 @@ module Handles  #:nodoc:
           else
             url = url_for(params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
           end
-          pcs << tpl.link_to(title, url, html_options)
+
+          indicator_text = conf[:indicator_text][nil]
         end
+
+        link_renderer = conf[:link_renderer].new(self,
+                                                 url: url,
+                                                 title: title,
+                                                 html_options: html_options,
+                                                 indicator_text: indicator_text)
+        pcs << link_renderer.to_s
 
         # For Rails 3 provide #html_safe.
         (v = pcs.join).respond_to?(:html_safe) ? v.html_safe : v
@@ -303,5 +311,33 @@ module Handles  #:nodoc:
         @sortable_columns_config ||= ::Handles::SortableColumns::Config.new
       end
     end # InstanceMethods
+
+    class DefaultLinkRenderer
+      attr_reader :controller, :pp, :url, :title, :html_options, :indicator_text
+
+      def initialize(controller, args = {})
+        @controller = controller
+        @url   = args[:url]
+        @title = args[:title]
+        @indicator_text = args[:indicator_text]
+        @html_options = args.fetch(:html_options, {})
+      end
+
+      def to_s
+        sortable_link + sortable_indicator
+      end
+
+      def sortable_link
+        template.link_to(title, url, html_options)
+      end
+
+      def sortable_indicator
+        (template.respond_to?(:raw) ? template.raw(indicator_text) : indicator_text)
+      end
+
+      def template
+        @_template ||= controller.respond_to?(:view_context) ? controller.view_context : controller.template
+      end
+    end
   end # SortableColumns
 end # Handles
