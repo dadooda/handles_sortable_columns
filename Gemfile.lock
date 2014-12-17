@@ -1,0 +1,14 @@
+PATH
+  remote: .
+  specs:
+    handles_sortable_columns (0.1.4)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  handles_sortable_columns!
