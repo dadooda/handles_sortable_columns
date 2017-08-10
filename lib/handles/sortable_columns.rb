@@ -129,7 +129,7 @@ module Handles  #:nodoc:
         end
 
         # Process configuration at every activation.
-        before_filter(fopts) do |ac|
+        before_action(fopts) do |ac|
           ac.instance_eval do
             # NOTE: Can't `yield`, we're in a block already.
             block.call(sortable_columns_config) if block
