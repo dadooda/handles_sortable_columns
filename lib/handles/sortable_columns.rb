@@ -40,6 +40,9 @@ module Handles  #:nodoc:
     #     ...
     #   end
     class Config
+      RAILS_SAFE_PARAMS = %i[action controller].freeze
+      LIB_PARAMS = %i[sort_param direction column page_param default_sort_value]
+                   .freeze
       # CSS class for link (regardless of sorted state). Default:
       #
       #   SortableColumnLink
@@ -70,6 +73,8 @@ module Handles  #:nodoc:
       #  {:asc => "SortedAsc", :desc => "SortedDesc"}
       attr_accessor :indicator_class
 
+      attr_reader :safe_params
+
       def initialize(attrs = {})
         defaults = {
           :link_class => "SortableColumnLink",
@@ -81,6 +86,11 @@ module Handles  #:nodoc:
         }
 
         defaults.merge(attrs).each {|k, v| send("#{k}=", v)}
+      end
+
+      def safe_params=(params = [])
+        @safe_params =
+          RAILS_SAFE_PARAMS + LIB_PARAMS + params.map(&:to_sym)
       end
 
       # Bracket access for convenience.
@@ -141,6 +151,11 @@ module Handles  #:nodoc:
     module InstanceMethods
       private
 
+      def safety_params
+        @safety_params ||=
+          params.permit(sortable_columns_config.safe_params).to_h
+      end
+
       # Internal/advanced use only. Parse sortable column sort param into a Hash with predefined keys.
       #
       #   parse_sortable_column_sort_param("name")    # => {:column => "name", :direction => :asc}
@@ -192,7 +207,7 @@ module Handles  #:nodoc:
         raise "Unknown option(s): #{options.inspect}" if not options.empty?
 
         # Parse sort param.
-        sort = params[conf[:sort_param]] || conf[:default_sort_value]
+        sort = safety_params[conf[:sort_param]] || conf[:default_sort_value]
         pp = parse_sortable_column_sort_param(sort)
 
         css_class = []
@@ -218,9 +233,9 @@ module Handles  #:nodoc:
         # Already sorted?
         if pp[:column] == o[:column].to_s
           if o[:route_proxy]
-            url = o[:route_proxy].send(:url_for, params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
+            url = o[:route_proxy].send(:url_for, safety_params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
           else
-            url = url_for(params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
+            url = url_for(safety_params.merge({conf[:sort_param] => [("-" if pp[:direction] == :asc), o[:column]].join, conf[:page_param] => 1}))
           end
           pcs << tpl.link_to(title, url, html_options)       # Opposite sort order when clicked.
 
@@ -231,9 +246,9 @@ module Handles  #:nodoc:
         else
           # Not sorted.
           if o[:route_proxy]
-            url = o[:route_proxy].send(:url_for, params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
+            url = o[:route_proxy].send(:url_for, safety_params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
           else
-            url = url_for(params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
+            url = url_for(safety_params.merge({conf[:sort_param] => [("-" if o[:direction] != :asc), o[:column]].join, conf[:page_param] => 1}))
           end
           pcs << tpl.link_to(title, url, html_options)
         end
@@ -274,7 +289,7 @@ module Handles  #:nodoc:
         conf[k = :default_sort_value] = sortable_columns_config[k]
 
         # Parse sort param.
-        sort = params[conf[:sort_param]] || conf[:default_sort_value]
+        sort = safety_params[conf[:sort_param]] || conf[:default_sort_value]
         pp = parse_sortable_column_sort_param(sort)
 
         order = if block
