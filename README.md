@@ -99,6 +99,11 @@ Disable text-based sort indicator completely:
       conf.indicator_text = {}
     end
 
+Add custom safe parameters to generated urls:
+
+  handles_sortable_columns do |conf|
+    conf.safe_params = [:name, :phone]
+  end
 
 ### Helper Options ###
 
