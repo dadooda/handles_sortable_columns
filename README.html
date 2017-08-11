@@ -102,6 +102,13 @@ end
 end
 </code></pre>
 
+<p>Add custom safe parameters to generated urls:</p>
+
+<pre><code>handles_sortable_columns do |conf|
+  conf.safe_params = [:name, :phone]
+end
+</code></pre>
+
 <h3 id="helper-options">Helper Options</h3>
 
 <p>Explicitly specify column name:</p>
